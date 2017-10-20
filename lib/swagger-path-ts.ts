@@ -78,17 +78,25 @@ async function processData(data: string) {
     // console.log(JSON.stringify(swagger, null, "  "));
 
     const dts = await dtsgen([swagger]);
-    console.log(dts);
-    console.log(allDefinitions.join("\n"));
-    console.log(fs.readFileSync(`${__dirname}/fetchApi.ts`, "utf8"));
-    console.log("export class Api {");
-    console.log(allMethods.join("\n"));
-    console.log("}");
+
+    let allCode = "";
+    allCode += dts;
+    allCode += allDefinitions.join("\n");
+    allCode += fs.readFileSync(`${__dirname}/fetchApi.ts`, "utf8");
+    allCode += "export class Api {";
+    allCode += allMethods.join("\n");
+    allCode += "}";
+    console.log(desanitizeAll(allCode));
 }
 
-const sanitize = (name: string) => /^[A-Za-z0-9_]$/.test(name) ? name : encodeURIComponent(name).replace(/%/g, "PP");
+const sanitize = (name: string) =>
+    /^[A-Za-z0-9_]$/.test(name) ? name : `${encodeURIComponent(sanitizeSoft(name)).replace(/%/g, "PERCENT")}SANITIZED`;
 
-const sanitizeSoft = (name: string) => name.replace(/[、・＆&／？?, ]/g, "_");
+const desanitizeAll = (str: string) =>
+    str.replace(/\b(\w+PERCENT\w+)SANITIZED/g, (_all, part) =>
+        decodeURIComponent(part.replace(/PERCENT/g, "%")));
+
+const sanitizeSoft = (name: string) => name.replace(/[、・＆&／？?, ]/g, "＿");
 
 const parameterName =
     (operation: Swagger.Operation, type: string) => sanitize(`${operation.operationId}${type}Parameter`);
