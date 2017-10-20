@@ -61,16 +61,19 @@ async function processData(data: string) {
 
     const allDefinitions = [];
     const allDefinitionSchemas = [];
-    const allMethods = [];
+    const allMethods: {[name: string]: string[][]} = {};
     const pathsObject = swagger.paths;
     for (const path of Object.keys(pathsObject)) {
         const pathItemObject = pathsObject[path];
         for (const _method of Object.keys(pathItemObject)) {
             const operation = pathItemObject[_method];
-            const { definitions, definitionSchemas, method } = genMethod(path, _method, operation);
+            const { definitions, definitionSchemas, method, tags } = genMethod(path, _method, operation);
             allDefinitions.push(...definitions);
             allDefinitionSchemas.push(...definitionSchemas);
-            allMethods.push(method);
+            for (const tag of tags) {
+                if (!allMethods[tag]) allMethods[tag] = [];
+                allMethods[tag].push(method);
+            }
         }
     }
     for (const definitionSchema of allDefinitionSchemas) {
@@ -84,10 +87,10 @@ async function processData(data: string) {
     let allCode = "";
     allCode += dts;
     allCode += allDefinitions.join("\n");
+    allCode += "\n";
     allCode += fs.readFileSync(`${__dirname}/fetchApi.ts`, "utf8");
-    allCode += "export class Api {";
-    allCode += allMethods.join("\n");
-    allCode += "\n}";
+    allCode += "\n";
+    allCode += genNamespacedMethods(allMethods);
     // tslint:disable-next-line no-console
     console.log(desanitizeAll(allCode));
 }
@@ -222,6 +225,8 @@ function genMethod(path: string, _method: string, operation: Swagger.Operation) 
             definitions.push(`export type ${typeName} = any; // TODO ${response.schema.type}\n`);
         }
     }
+
+    // generate method
     const pathCode = path.split("/").map((part) => part[0] === "{" ? `$${part}` : part).join("/");
     const fetchApiParams = [
         `"${_method}"`,
@@ -234,13 +239,42 @@ function genMethod(path: string, _method: string, operation: Swagger.Operation) 
         if (fetchApiParams[i] !== "undefined") break;
         fetchApiParams.pop();
     }
-    const method = `
-    /**
-${methodDescriptions.map((d) => `     * ${d}\n`).join("")}     */
-    async ${sanitizeSoft(operation.operationId || "")}(${methodSignatures.map((s) => `\n        ${s},`).join("")}
-    ) {
-        return (await fetchApi(${fetchApiParams.join(", ")})) as ${sanitize(`${operation.operationId}OKResponse`)};
-    }`;
+    const method = [];
+    method.push("/**");
+    for (const methodDescription of methodDescriptions) {
+        method.push(` * ${methodDescription}`);
+    }
+    method.push(" */");
+    method.push(`async ${sanitizeSoft(operation.operationId || "")}(`);
+    for (const methodSignature of methodSignatures) {
+        method.push(`    ${methodSignature},`);
+    }
+    method.push(") {");
+    method.push("    return (");
+    method.push(`        await fetchApi(root, ${fetchApiParams.join(", ")})`);
+    method.push(`    ) as ${sanitize(`${operation.operationId}OKResponse`)};`);
+    method.push("},");
 
-    return { definitions, definitionSchemas, method };
+    const tags = operation.tags || [] as string[];
+    if (!tags.length) tags.push("NO_TAG");
+
+    return { definitions, definitionSchemas, method, tags };
+}
+
+function genNamespacedMethods(allMethods: {[name: string]: string[][]}) {
+    let code = "";
+    code += "export const generateApi = (root: string) => ({\n";
+    for (const tag of Object.keys(allMethods)) {
+        const methods = allMethods[tag];
+        code += `    ${tag}: {\n`;
+        for (const method of methods) {
+            for (const line of method) {
+                code += `        ${line}\n`;
+            }
+        }
+        code += "    },\n";
+    }
+    code += "});\n";
+
+    return code;
 }

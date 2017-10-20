@@ -1,5 +1,5 @@
-async function fetchApi(method: string, path: string, query?: any, body?: any, header?: any) {
-    let pathStr = path;
+async function fetchApi(root: string, method: string, path: string, query?: any, body?: any, header?: any) {
+    let pathStr = `${root}${path}`;
     if (query) {
         const queryStrings = [];
         for (const name of Object.keys(query)) {
