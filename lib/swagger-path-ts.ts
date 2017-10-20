@@ -85,7 +85,7 @@ async function processData(data: string) {
     allCode += fs.readFileSync(`${__dirname}/fetchApi.ts`, "utf8");
     allCode += "export class Api {";
     allCode += allMethods.join("\n");
-    allCode += "}";
+    allCode += "\n}";
     console.log(desanitizeAll(allCode));
 }
 
@@ -233,13 +233,11 @@ function genMethod(path: string, _method: string, operation: Swagger.Operation) 
     }
     const method = `
     /**
-${methodDescriptions.map((d) => `     * ${d}\n`).join("")}
-    */
+${methodDescriptions.map((d) => `     * ${d}\n`).join("")}     */
     async ${sanitizeSoft(operation.operationId || "")}(${methodSignatures.map((s) => `\n        ${s},`).join("")}
     ) {
         return (await fetchApi(${fetchApiParams.join(", ")})) as ${sanitize(`${operation.operationId}OKResponse`)};
-    }
-    `;
+    }`;
 
     return { definitions, definitionSchemas, method };
 }
