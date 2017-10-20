@@ -1,8 +1,10 @@
+// tslint:disable no-reference
 /// <reference types="node" />
 /// <reference path="../node_modules/swagger.d.ts/swagger.d.ts" />
 
 import * as fs from "fs";
-const dtsgen = require("dtsgenerator").default;
+// tslint:disable-next-line no-require-imports no-var-requires
+const dtsgen = require("dtsgenerator").default; // dtsgeneratorに型がないので
 
 process.stdin.setEncoding("utf8");
 process.stdin.resume();
@@ -86,6 +88,7 @@ async function processData(data: string) {
     allCode += "export class Api {";
     allCode += allMethods.join("\n");
     allCode += "\n}";
+    // tslint:disable-next-line no-console
     console.log(desanitizeAll(allCode));
 }
 
