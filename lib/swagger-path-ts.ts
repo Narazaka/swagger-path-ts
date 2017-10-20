@@ -242,7 +242,7 @@ function genMethod(path: string, _method: string, operation: Swagger.Operation) 
     const method = [];
     method.push("/**");
     for (const methodDescription of methodDescriptions) {
-        method.push(` * ${methodDescription}`);
+        method.push(` * @param ${methodDescription}`);
     }
     method.push(" */");
     method.push(`async ${sanitizeSoft(operation.operationId || "")}(`);
