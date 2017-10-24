@@ -1,8 +1,15 @@
 /**
  * generate fetch wrapper function
  * @param fetchFunc fetch() function (you can pass wrapper function for fetch())
+ * @param preprocess args preprocessors
  */
-export function genFetchApi(fetchFunc = fetch) {
+export function genFetchApi(
+    fetchFunc = fetch,
+    preprocess: {
+        query?(query?: {[name: string]: any}): {[name: string]: any};
+        body?(query: {[name: string]: any}): {[name: string]: any};
+    } = {},
+) {
     /**
      * fetch() wrapper
      * @param root path root (ex. `"https://example.com"`)
@@ -13,7 +20,19 @@ export function genFetchApi(fetchFunc = fetch) {
      * @param header headers object (ex. `{ "X-Foo": "bar" }`)
      * @return response json data
      */
-    function fetchApi(root: string, method: string, path: string, query?: any, body: any = {}, header: any = {}) {
+    function fetchApi(
+        root: string,
+        method: string,
+        path: string,
+        query?: {[name: string]: any},
+        body: {[name: string]: any} = {},
+        header: {[name: string]: any} = {},
+    ) {
+        // tslint:disable-next-line no-parameter-reassignment
+        if (preprocess.query) query = preprocess.query(query);
+        // tslint:disable-next-line no-parameter-reassignment
+        if (preprocess.body) body = preprocess.body(body);
+
         let pathStr = `${root}${path}`;
         if (query) {
             const queryStrings = [];
