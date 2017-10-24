@@ -120,6 +120,8 @@ export function genMethod(path: string, _method: string, operation: Swagger.Oper
         if (response.schema.type === "object") {
             (response.schema as any).id = typeName;
             definitionSchemas.push(response.schema);
+        } else if (response.schema.$ref && /^#(?!\/)/.test(response.schema.$ref)) { // $ref: "#IFoo" etc.
+            definitions.push(`export type ${typeName} = ${response.schema.$ref.slice(1)};\n`);
         } else {
             definitions.push(`export type ${typeName} = any; // TODO ${response.schema.type}\n`);
         }
