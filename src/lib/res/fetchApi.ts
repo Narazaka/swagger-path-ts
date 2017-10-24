@@ -13,7 +13,7 @@ export function genFetchApi(fetchFunc = fetch) {
      * @param header headers object (ex. `{ "X-Foo": "bar" }`)
      * @return response json data
      */
-    async function fetchApi(root: string, method: string, path: string, query?: any, body?: any, header?: any) {
+    async function fetchApi(root: string, method: string, path: string, query?: any, body: any = {}, header: any = {}) {
         let pathStr = `${root}${path}`;
         if (query) {
             const queryStrings = [];
@@ -26,6 +26,7 @@ export function genFetchApi(fetchFunc = fetch) {
                 pathStr += `?${queryStrings.join("&")}`;
             }
         }
+        header["Content-Type"] = "application/json";
 
         return fetchFunc(pathStr, {
             method,
