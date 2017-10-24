@@ -1,108 +1,7 @@
 // tslint:disable no-reference
-/// <reference types="node" />
-/// <reference path="../node_modules/swagger.d.ts/swagger.d.ts" />
+/// <reference path="../../node_modules/swagger.d.ts/swagger.d.ts" />
 
-import * as fs from "fs";
-// tslint:disable-next-line no-require-imports no-var-requires
-const dtsgen = require("dtsgenerator").default; // dtsgeneratorに型がないので
-
-process.stdin.setEncoding("utf8");
-process.stdin.resume();
-
-let stdinData = "";
-
-process.stdin.on("data", function(chunk) {
-    stdinData += chunk;
-});
-
-process.stdin.on("close", function() {
-    processData(stdinData);
-    process.exit();
-});
-
-process.stdin.on("end", async function() {
-    await processData(stdinData);
-    process.exit();
-});
-
-function addIdForDefinitions(schema: any) {
-    if (!schema.definitions) return schema;
-    for (const name of Object.keys(schema.definitions)) {
-        const value = schema.definitions[name];
-        value.id = `#I${name}`;
-        if (value.examples && typeof value.examples === "object") {
-            value.examples.id = `#I${name}-examples`;
-        }
-        if (value.example && typeof value.example === "object") {
-            value.example.id = `#I${name}-example`;
-        }
-    }
-
-    return schema;
-}
-
-function refPathToId(node: any) {
-    if (node instanceof Array) {
-        for (const childNode of node) refPathToId(childNode);
-        // tslint:disable-next-line no-null-keyword
-    } else if (node != null && typeof node === "object") {
-        if (node.$ref && /^#\/definitions\//.test(node.$ref)) {
-            node.$ref = node.$ref.replace(/^#\/definitions\//, "#I");
-        }
-        for (const name of Object.keys(node)) refPathToId(node[name]);
-    }
-}
-
-async function processData(data: string) {
-
-    const swagger = JSON.parse(data);
-    addIdForDefinitions(swagger);
-    refPathToId(swagger);
-
-    const allDefinitions = [];
-    const allDefinitionSchemas = [];
-    const allMethods: {[name: string]: string[][]} = {};
-    const pathsObject = swagger.paths;
-    for (const path of Object.keys(pathsObject)) {
-        const pathItemObject = pathsObject[path];
-        for (const _method of Object.keys(pathItemObject)) {
-            const operation = pathItemObject[_method];
-            const { definitions, definitionSchemas, method, tags } = genMethod(path, _method, operation);
-            allDefinitions.push(...definitions);
-            allDefinitionSchemas.push(...definitionSchemas);
-            for (const tag of tags) {
-                if (!allMethods[tag]) allMethods[tag] = [];
-                allMethods[tag].push(method);
-            }
-        }
-    }
-    for (const definitionSchema of allDefinitionSchemas) {
-        swagger.definitions[(definitionSchema as any).id] = definitionSchema;
-    }
-
-    // console.log(JSON.stringify(swagger, null, "  "));
-
-    const dts = await dtsgen([swagger]);
-
-    let allCode = "";
-    allCode += dts;
-    allCode += allDefinitions.join("\n");
-    allCode += "\n";
-    allCode += fs.readFileSync(`${__dirname}/fetchApi.ts`, "utf8");
-    allCode += "\n";
-    allCode += genNamespacedMethods(allMethods);
-    // tslint:disable-next-line no-console
-    console.log(desanitizeAll(allCode));
-}
-
-const sanitize = (name: string) =>
-    /^[A-Za-z0-9_]$/.test(name) ? name : `${encodeURIComponent(sanitizeSoft(name)).replace(/%/g, "PERCENT")}SANITIZED`;
-
-const desanitizeAll = (str: string) =>
-    str.replace(/\b(\w+PERCENT\w+)SANITIZED/g, (_all, part) =>
-        decodeURIComponent(part.replace(/PERCENT/g, "%")));
-
-const sanitizeSoft = (name: string) => name.replace(/[、・＆&／？?, ]/g, "＿");
+import { sanitize, sanitizeNoWord } from "./sanitize";
 
 const parameterName =
     (operation: Swagger.Operation, type: string) => sanitize(`${operation.operationId}${type}Parameter`);
@@ -148,7 +47,7 @@ function statusCodeToMessage(statusCode: string | number) {
 }
 
 // tslint:disable-next-line cyclomatic-complexity
-function genMethod(path: string, _method: string, operation: Swagger.Operation) {
+export function genMethod(path: string, _method: string, operation: Swagger.Operation) {
     const definitions: string[] = [];
     const definitionSchemas: object[] = [];
     let methodSignatures: string[] = [];
@@ -245,7 +144,7 @@ function genMethod(path: string, _method: string, operation: Swagger.Operation) 
         method.push(` * @param ${methodDescription}`);
     }
     method.push(" */");
-    method.push(`async ${sanitizeSoft(operation.operationId || "")}(`);
+    method.push(`async ${sanitizeNoWord(operation.operationId || "")}(`);
     for (const methodSignature of methodSignatures) {
         method.push(`    ${methodSignature},`);
     }
@@ -259,22 +158,4 @@ function genMethod(path: string, _method: string, operation: Swagger.Operation) 
     if (!tags.length) tags.push("NO_TAG");
 
     return { definitions, definitionSchemas, method, tags };
-}
-
-function genNamespacedMethods(allMethods: {[name: string]: string[][]}) {
-    let code = "";
-    code += "export const generateApi = (root: string) => ({\n";
-    for (const tag of Object.keys(allMethods)) {
-        const methods = allMethods[tag];
-        code += `    ${tag}: {\n`;
-        for (const method of methods) {
-            for (const line of method) {
-                code += `        ${line}\n`;
-            }
-        }
-        code += "    },\n";
-    }
-    code += "});\n";
-
-    return code;
 }

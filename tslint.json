@@ -13,8 +13,7 @@
             "allow-leading-underscore"
         ],
         "interface-name": [
-            true,
-            "never-prefix"
+            false
         ],
         "typedef": false,
         "no-unsafe-any": false,
