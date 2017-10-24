@@ -8,7 +8,7 @@
  * @param header headers object (ex. `{ "X-Foo": "bar" }`)
  * @return response json data
  */
-async function fetchApi(root: string, method: string, path: string, query?: any, body?: any, header?: any) {
+export async function fetchApi(root: string, method: string, path: string, query?: any, body?: any, header?: any) {
     let pathStr = `${root}${path}`;
     if (query) {
         const queryStrings = [];
@@ -21,11 +21,23 @@ async function fetchApi(root: string, method: string, path: string, query?: any,
             pathStr += `?${queryStrings.join("&")}`;
         }
     }
-    const response = await fetch(pathStr, {
+
+    return fetch(pathStr, {
         method,
         headers: header,
         body: JSON.stringify(body),
     });
+}
 
-    return await response.json();
+// tslint:disable-next-line no-magic-numbers
+export interface OKResponse<ResponseType, StatusCode extends number = 200> extends Response {
+    ok: true;
+    status: StatusCode;
+    json(): Promise<ResponseType>;
+}
+
+export interface NGResponse<ResponseType, StatusCode extends number> extends Response {
+    ok: false;
+    status: StatusCode;
+    json(): Promise<ResponseType>;
 }

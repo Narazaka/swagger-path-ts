@@ -126,7 +126,10 @@ export function genMethod(path: string, _method: string, operation: Swagger.Oper
     }
 
     // generate method
+
+    // path
     const pathCode = path.split("/").map((part) => part[0] === "{" ? `$${part}` : part).join("/");
+    // params
     const fetchApiParams = [
         `"${_method}"`,
         `\`${pathCode}\``,
@@ -138,6 +141,20 @@ export function genMethod(path: string, _method: string, operation: Swagger.Oper
         if (fetchApiParams[i] !== "undefined") break;
         fetchApiParams.pop();
     }
+    // return type
+    const responseTypes = [];
+    for (const status of Object.keys(operation.responses)) {
+        const statusCode = Number(status);
+        const returnType = `${sanitize(`${operation.operationId}${statusCodeToMessage(status)}Response`)}`;
+        // tslint:disable-next-line binary-expression-operand-order no-magic-numbers
+        if (200 <= statusCode && statusCode < 300) {
+            responseTypes.push(`OKResponse<${returnType}, ${statusCode}>`);
+        } else {
+            responseTypes.push(`NGResponse<${returnType}, ${statusCode}>`);
+        }
+    }
+
+    // build method code
     const method = [];
     method.push("/**");
     for (const methodDescription of methodDescriptions) {
@@ -151,7 +168,13 @@ export function genMethod(path: string, _method: string, operation: Swagger.Oper
     method.push(") {");
     method.push("    return (");
     method.push(`        await fetchApi(root, ${fetchApiParams.join(", ")})`);
-    method.push(`    ) as ${sanitize(`${operation.operationId}OKResponse`)};`);
+    method.push("    ) as (");
+    for (let i = 0; i < responseTypes.length; ++i) {
+        const responseType = responseTypes[i];
+        const postfix = i === responseTypes.length - 1 ? "" : " |";
+        method.push(`        ${responseType}${postfix}`);
+    }
+    method.push("    );\n");
     method.push("},");
 
     const tags = operation.tags || [] as string[];
