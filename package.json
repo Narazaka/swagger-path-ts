@@ -7,6 +7,10 @@
   "bin": {
     "swagger-ts-client-generator": "dist/bin/swagger-ts-client-generator.js"
   },
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "dist": "tsc",
     "prepublish": "npm run dist"
