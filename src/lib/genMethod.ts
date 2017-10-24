@@ -176,7 +176,7 @@ export function genMethod(path: string, _method: string, operation: Swagger.Oper
         const postfix = i === responseTypes.length - 1 ? "" : " |";
         method.push(`        ${responseType}${postfix}`);
     }
-    method.push("    );\n");
+    method.push("    );");
     method.push("},");
 
     const tags = operation.tags || [] as string[];
