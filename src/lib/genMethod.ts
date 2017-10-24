@@ -163,20 +163,20 @@ export function genMethod(path: string, _method: string, operation: Swagger.Oper
         method.push(` * @param ${methodDescription}`);
     }
     method.push(" */");
-    method.push(`async ${sanitizeNoWord(operation.operationId || "")}(`);
+    method.push(`${sanitizeNoWord(operation.operationId || "")}(`);
     for (const methodSignature of methodSignatures) {
         method.push(`    ${methodSignature},`);
     }
     method.push(") {");
     method.push("    return (");
-    method.push(`        await fetchApi(root, ${fetchApiParams.join(", ")})`);
-    method.push("    ) as (");
+    method.push(`        fetchApi(root, ${fetchApiParams.join(", ")})`);
+    method.push("    ) as Promise<");
     for (let i = 0; i < responseTypes.length; ++i) {
         const responseType = responseTypes[i];
         const postfix = i === responseTypes.length - 1 ? "" : " |";
         method.push(`        ${responseType}${postfix}`);
     }
-    method.push("    );");
+    method.push("    >;");
     method.push("},");
 
     const tags = operation.tags || [] as string[];
