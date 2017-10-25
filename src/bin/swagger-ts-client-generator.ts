@@ -13,11 +13,9 @@ process.stdin.on("data", function(chunk) {
 process.stdin.on("close", async function() {
     // tslint:disable-next-line no-console
     console.log(await genClient(stdinData));
-    process.exit();
 });
 
 process.stdin.on("end", async function() {
     // tslint:disable-next-line no-console
     console.log(await genClient(stdinData));
-    process.exit();
 });
