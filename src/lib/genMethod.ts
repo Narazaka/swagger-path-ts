@@ -30,17 +30,30 @@ function convertType(type: string) {
     }
 }
 
+// tslint:disable-next-line cyclomatic-complexity
 function statusCodeToMessage(statusCode: string | number) {
     // tslint:disable no-magic-numbers
     switch (Number(statusCode)) {
         case 200: return "OK";
+        case 201: return "Created";
+        case 202: return "Accepted";
         case 204: return "NoContent";
+        case 301: return "MovedPermanently";
+        case 302: return "Found";
+        case 304: return "NotModified";
+        case 307: return "TemporaryRedirect";
+        case 308: return "PermanentRedirect";
         case 400: return "BadRequest";
         case 401: return "Unauthorized";
         case 402: return "PaymentRequired";
         case 403: return "Forbidden";
         case 404: return "NotFound";
+        case 405: return "MethodNotAllowed";
+        case 406: return "NotAcceptable";
+        case 408: return "RequestTimeout";
         case 500: return "InternalServerError";
+        case 502: return "BadGateway";
+        case 503: return "GatewayTimeout";
         default: return "UNKNOWN";
     }
     // tslint:enable no-magic-numbers
@@ -115,9 +128,10 @@ export function genMethod(path: string, _method: string, operation: Swagger.Oper
     }
     for (const status of Object.keys(operation.responses)) {
         const response = operation.responses[status];
-        if (!response.schema) continue;
         const typeName = sanitize(`${operation.operationId}${statusCodeToMessage(status)}Response`);
-        if (response.schema.type === "object") {
+        if (!response.schema) {
+            definitions.push(`export type ${typeName} = any; // no schema\n`);
+        } else if (response.schema.type === "object") {
             (response.schema as any).id = typeName;
             definitionSchemas.push(response.schema);
         } else if (response.schema.$ref && /^#(?!\/)/.test(response.schema.$ref)) { // $ref: "#IFoo" etc.
