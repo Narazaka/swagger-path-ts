@@ -8,6 +8,14 @@ export type FetchFunc<Options> =
      */
     (input: RequestInfo, init?: RequestInit, options?: Options) => Promise<Response>;
 
+/** fetch() args preprocessors */
+export interface FetchPreprocessors {
+    /** query preprocessor */
+    query?(query?: {[name: string]: any}): {[name: string]: any};
+    /** body preprocessor */
+    body?(query?: {[name: string]: any}): {[name: string]: any};
+}
+
 /** fetch request parameters */
 export interface RequestParams {
     /** query string object (ex. `{ q: "search" }`) */
@@ -25,10 +33,7 @@ export interface RequestParams {
  */
 export function genFetchApi<Options>(
     fetchFunc: FetchFunc<Options> = fetch,
-    preprocess: {
-        query?(query?: {[name: string]: any}): {[name: string]: any};
-        body?(query?: {[name: string]: any}): {[name: string]: any};
-    } = {},
+    preprocess: FetchPreprocessors = {},
 ) {
     /**
      * fetch() wrapper
