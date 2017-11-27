@@ -149,14 +149,15 @@ export function genMethod(path: string, _method: string, operation: Swagger.Oper
     const fetchApiParams = [
         `"${_method}"`,
         `\`${pathCode}\``,
-        queryExists ? "query" : "undefined",
-        bodyExists ? "body" : "undefined",
-        headerExists ? "header" : "undefined",
+        `{${
+            [
+                queryExists ? "query" : undefined,
+                bodyExists ? "body" : undefined,
+                headerExists ? "header" : undefined,
+            ].filter((p) => p).join(", ")
+        }}`,
+        "options",
     ];
-    for (let i = fetchApiParams.length - 1; i >= 0; --i) {
-        if (fetchApiParams[i] !== "undefined") break;
-        fetchApiParams.pop();
-    }
     // return type
     const responseTypes = [];
     for (const status of Object.keys(operation.responses)) {
@@ -169,6 +170,9 @@ export function genMethod(path: string, _method: string, operation: Swagger.Oper
             responseTypes.push(`NGResponse<${returnType}, ${statusCode}>`);
         }
     }
+    // add options to method signature
+    methodDescriptions.push("options options on api call");
+    methodSignatures.push("options?: Options");
 
     // build method code
     const method = [];

@@ -1,13 +1,33 @@
+/** fetch() wrapper function */
+export type FetchFunc<Options> =
+    /**
+     * @param input fetch() input
+     * @param init fetch() init
+     * @param options any options on api call
+     * @return fetch() return value
+     */
+    (input: RequestInfo, init?: RequestInit, options?: Options) => Promise<Response>;
+
+/** fetch request parameters */
+export interface RequestParams {
+    /** query string object (ex. `{ q: "search" }`) */
+    query?: {[name: string]: any};
+    /** body json object (ex. `{ data: "aaa" }`) */
+    body?: {[name: string]: any};
+    /** headers object (ex. `{ "X-Foo": "bar" }`) */
+    header?: {[name: string]: any};
+}
+
 /**
  * generate fetch wrapper function
  * @param fetchFunc fetch() function (you can pass wrapper function for fetch())
  * @param preprocess args preprocessors
  */
-export function genFetchApi(
-    fetchFunc = fetch,
+export function genFetchApi<Options>(
+    fetchFunc: FetchFunc<Options> = fetch,
     preprocess: {
         query?(query?: {[name: string]: any}): {[name: string]: any};
-        body?(query: {[name: string]: any}): {[name: string]: any};
+        body?(query?: {[name: string]: any}): {[name: string]: any};
     } = {},
 ) {
     /**
@@ -15,23 +35,20 @@ export function genFetchApi(
      * @param root path root (ex. `"https://example.com"`)
      * @param method request method (ex. `"get"`)
      * @param path path (ex. `/foo/bar`)
-     * @param query query string object (ex. `{ q: "search" }`)
-     * @param body body json object (ex. `{ data: "aaa" }`)
-     * @param header headers object (ex. `{ "X-Foo": "bar" }`)
+     * @param params fetch request parameters
+     * @param options options on api call
      * @return response json data
      */
     function fetchApi(
         root: string,
         method: string,
         path: string,
-        query?: {[name: string]: any},
-        body: {[name: string]: any} = {},
-        header: {[name: string]: any} = {},
+        params: RequestParams = {},
+        options?: Options,
     ) {
-        // tslint:disable-next-line no-parameter-reassignment
-        if (preprocess.query) query = preprocess.query(query);
-        // tslint:disable-next-line no-parameter-reassignment
-        if (preprocess.body) body = preprocess.body(body);
+        const query = preprocess.query ? preprocess.query(params.query) : params.query;
+        const body = preprocess.body ? preprocess.body(params.body) : params.body;
+        const header = params.header || {};
 
         let pathStr = `${root}${path}`;
         if (query) {
@@ -47,11 +64,11 @@ export function genFetchApi(
         }
         header["Content-Type"] = "application/json";
 
-        return fetchFunc(pathStr, {
-            method,
-            headers: new Headers(header),
-            body: JSON.stringify(body),
-        });
+        return fetchFunc(
+            pathStr,
+            { method, headers: new Headers(header), body: JSON.stringify(body) },
+            options,
+        );
     }
 
     return fetchApi;
