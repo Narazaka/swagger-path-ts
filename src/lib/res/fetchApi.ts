@@ -49,7 +49,7 @@ export function genFetchApi(
 
         return fetchFunc(pathStr, {
             method,
-            headers: header,
+            headers: new Headers(header),
             body: JSON.stringify(body),
         });
     }
