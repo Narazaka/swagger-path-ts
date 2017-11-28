@@ -147,7 +147,7 @@ export function genMethod(path: string, _method: string, operation: Swagger.Oper
     const pathCode = path.split("/").map((part) => part[0] === "{" ? `$${part}` : part).join("/");
     // params
     const fetchApiParams = [
-        `"${_method}"`,
+        `"${_method.toUpperCase()}"`,
         `\`${pathCode}\``,
         `{${
             [
