@@ -177,7 +177,7 @@ export function genMethod(path: string, _method: string, operation: Swagger.Oper
     // build method code
     const method = [];
     method.push("/**");
-    method.push(` * ${pathCode}`);
+    method.push(` * ${_method.toUpperCase()} ${pathCode}`);
     for (const methodDescription of methodDescriptions) {
         method.push(` * @param ${methodDescription}`);
     }
