@@ -1,6 +1,6 @@
 {
   "name": "swagger-ts-client-generator",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "description": "swagger schema based api client generator for typescript",
   "main": "dist/lib/genClient.js",
   "types": "dist/lib/genClient.d.ts",
