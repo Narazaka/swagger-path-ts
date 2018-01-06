@@ -1,5 +1,7 @@
 # swagger-ts-client-generator
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/Narazaka/swagger-ts-client-generator.svg)](https://greenkeeper.io/)
+
 swagger schema based api client generator for typescript
 
 ## Install
