@@ -4,7 +4,15 @@
 import { sanitize, sanitizeNoWord } from "./sanitize";
 
 const parameterName =
-    (operation: Swagger.Operation, type: string) => sanitize(`${operation.operationId}${type}Parameter`);
+    (operation: Swagger.Operation, type: string) => convertUpperCamelCase(sanitize(`${operation.operationId}${type}Parameter`));
+
+const convertCamelCase = (str: string) => str.replace(/[-_](.)/g, (_match, p1) => p1.toUpperCase());
+
+const convertUpperCamelCase = (str: string) => {
+  const camelCaseStr = convertCamelCase(str);
+
+  return camelCaseStr.charAt(0).toUpperCase() + camelCaseStr.slice(1);
+}
 
 function genParameterInterface(name: string, parameters: Swagger.Parameter[]) {
     const schema: any = {};
@@ -128,7 +136,7 @@ export function genMethod(path: string, _method: string, operation: Swagger.Oper
     }
     for (const status of Object.keys(operation.responses)) {
         const response = operation.responses[status];
-        const typeName = sanitize(`${operation.operationId}${statusCodeToMessage(status)}Response`);
+        const typeName = convertUpperCamelCase(sanitize(`${operation.operationId}${statusCodeToMessage(status)}Response`));
         if (!response.schema) {
             definitions.push(`export type ${typeName} = any; // no schema\n`);
         } else if (response.schema.type === "object") {
@@ -162,7 +170,7 @@ export function genMethod(path: string, _method: string, operation: Swagger.Oper
     const responseTypes = [];
     for (const status of Object.keys(operation.responses)) {
         const statusCode = Number(status);
-        const returnType = `${sanitize(`${operation.operationId}${statusCodeToMessage(status)}Response`)}`;
+        const returnType = convertUpperCamelCase(`${sanitize(`${operation.operationId}${statusCodeToMessage(status)}Response`)}`);
         // tslint:disable-next-line binary-expression-operand-order no-magic-numbers
         if (200 <= statusCode && statusCode < 300) {
             responseTypes.push(`OKResponse<${returnType}, ${statusCode}>`);
@@ -182,7 +190,7 @@ export function genMethod(path: string, _method: string, operation: Swagger.Oper
         method.push(` * @param ${methodDescription}`);
     }
     method.push(" */");
-    method.push(`${sanitizeNoWord(operation.operationId || "")}(`);
+    method.push(`${convertCamelCase(sanitizeNoWord(operation.operationId || ""))}(`);
     for (const methodSignature of methodSignatures) {
         method.push(`    ${methodSignature},`);
     }
