@@ -25,6 +25,6 @@
     "typescript": "^2.6.1"
   },
   "dependencies": {
-    "dtsgenerator": "^0.9.6"
+    "dtsgenerator": "^2.6.0"
   }
 }
